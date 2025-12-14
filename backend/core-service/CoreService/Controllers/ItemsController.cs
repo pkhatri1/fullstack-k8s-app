@@ -1,6 +1,9 @@
-﻿using CoreService.Services.Interfaces;
+﻿using CoreService.Data;
+using CoreService.Domain.Entities;
+using CoreService.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreService.Controllers;
 
@@ -10,26 +13,27 @@ namespace CoreService.Controllers;
 public class ItemsController : ControllerBase
 {
     private readonly IItemService _itemService;
+    private readonly AppDbContext _db;
 
-    public ItemsController(IItemService itemService)
+    public ItemsController(IItemService itemService, AppDbContext db)
     {
         _itemService = itemService;
+        _db = db;
     }
 
     [HttpGet]
-    public IActionResult Get()
+    public async Task<IActionResult> GetItems()
     {
-        return Ok(_itemService.GetAll());
+        var items = await _db.Items.ToListAsync();
+        return Ok(items);
     }
 
     [HttpPost]
-    public IActionResult Create([FromBody] CreateItemRequest request)
+    public async Task<IActionResult> CreateItem(ItemEntity item)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            return BadRequest("Name is required.");
-
-        var item = _itemService.Create(request.Name);
-        return CreatedAtAction(nameof(Get), item);
+        _db.Items.Add(item);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetItems), new { id = item.Id }, item);
     }
 }
 
