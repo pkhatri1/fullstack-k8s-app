@@ -69,6 +69,11 @@ builder.Services
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+	var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+	options.UseNpgsql(connectionString);
+});
 
 var app = builder.Build();
 
