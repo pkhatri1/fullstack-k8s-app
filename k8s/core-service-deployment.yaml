@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: core-service
+  template:
+    metadata:
+      labels:
+        app: core-service
+    spec:
+      containers:
+      - name: core-service
+        image: core-service:1.2
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        terminationGracePeriodSeconds:30
+        
+
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ConnectionStrings__Postgres
+          value: Host=postgres;Port=5432;Database=coredb;Username=coreuser;Password=corepass
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
+

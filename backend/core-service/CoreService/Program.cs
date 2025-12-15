@@ -10,6 +10,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -66,20 +67,15 @@ builder.Services
         };
     });
 
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//	options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//{
-//	var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-//	options.UseNpgsql(connectionString);
-//});
-
-
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
 	var connectionString = builder.Configuration.GetConnectionString("Postgres");
 	options.UseNpgsql(connectionString);
+});
+
+builder.Services.Configure<HostOptions>(options =>
+{
+	options.ShutdownTimeout = TimeSpan.FromSeconds(30);
 });
 
 var app = builder.Build();
@@ -92,11 +88,23 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapControllers();
+app.MapHealthChecks("/health").AllowAnonymous();
+
+
 
 using (var scope = app.Services.CreateScope())
 {
 	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-	db.Database.Migrate();
+
+	try
+	{
+		db.Database.Migrate();
+	}
+	catch (Exception ex)
+	{
+		Console.WriteLine("Database migration failed. Retrying on next restart.");
+		Console.WriteLine(ex.Message);
+	}
 }
 
 
