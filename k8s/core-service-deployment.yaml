@@ -12,33 +12,44 @@ spec:
       labels:
         app: core-service
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
-      - name: core-service
-        image: core-service:1.2
-        ports:
-        - containerPort: 8080
-        livenessProbe:
-        httpGet:
-          path: /health
-          port: 8080
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /health
-            port: 8080
-            scheme: HTTP
-        initialDelaySeconds: 30
-        periodSeconds: 10
-        terminationGracePeriodSeconds:30
-        
+        - name: core-service
+          image: core-service:1.2
+          ports:
+            - containerPort: 8080
 
-        env:
-        - name: ASPNETCORE_ENVIRONMENT
-          value: Development
-        - name: ConnectionStrings__Postgres
-          value: Host=postgres;Port=5432;Database=coredb;Username=coreuser;Password=corepass
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "sleep 10"]
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          envFrom:
+            - configMapRef:
+                name: core-service-config
+
+          env:
+            - name: ConnectionStrings__Postgres
+              value: Host=postgres;Port=5432;Database=coredb;Username=coreuser;Password=corepass
+
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
 

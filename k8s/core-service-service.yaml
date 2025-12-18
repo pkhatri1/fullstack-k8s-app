@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: core-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: core-service
   ports:
